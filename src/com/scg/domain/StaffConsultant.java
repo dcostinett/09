@@ -21,19 +21,20 @@ public class StaffConsultant extends Consultant {
     public static final String SICK_LEAVE_HOURS_PROPERTY_NAME  = "sickLeaveHours";
     public static final String VACATION_HOURS_PROPERTY_NAME    = "vacationHours";
 
-    int payRate;
-    int sickLeaveHours;
-    int vacationHours;
+    /** Factor used in calculating hashCode. */
+    private static final int HASH_FACTOR = 37;
+
+    private int payRate;
+    private int sickLeaveHours;
+    private int vacationHours;
 
     private final VetoableChangeSupport vetoSupport = new VetoableChangeSupport(this);
     private final PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
 
-    private static final Logger LOGGER = Logger.getLogger("StaffConsultant.class");
-
-    public StaffConsultant(Name name,
-                           int rate,
-                           int sickLeave,
-                           int vacation) {
+    public StaffConsultant(final Name name,
+                           final int rate,
+                           final int sickLeave,
+                           final int vacation) {
         super(name);
         this.payRate = rate;
         this.sickLeaveHours = sickLeave;
@@ -45,7 +46,7 @@ public class StaffConsultant extends Consultant {
         return payRate;
     }
 
-    public void setPayRate(int payRate) throws PropertyVetoException {
+    public void setPayRate(final int payRate) throws PropertyVetoException {
         int oldValue = getPayRate();
         vetoSupport.fireVetoableChange(PAY_RATE_PROPERTY_NAME, oldValue, payRate);
         this.payRate = payRate;
@@ -56,8 +57,8 @@ public class StaffConsultant extends Consultant {
         return sickLeaveHours;
     }
 
-    public void setSickLeaveHours(int sickLeaveHours) {
-        int oldHours = getSickLeaveHours();
+    public void setSickLeaveHours(final int sickLeaveHours) {
+        final int oldHours = getSickLeaveHours();
         this.sickLeaveHours = sickLeaveHours;
         changeSupport.firePropertyChange(SICK_LEAVE_HOURS_PROPERTY_NAME, oldHours, sickLeaveHours);
     }
@@ -66,9 +67,8 @@ public class StaffConsultant extends Consultant {
         return vacationHours;
     }
 
-    public void setVacationHours(int vacationHours) throws PropertyVetoException {
-        int oldHours = getVacationHours();
-        //vetoSupport.fireVetoableChange("vacationHours", oldHours, vacationHours);
+    public void setVacationHours(final int vacationHours) throws PropertyVetoException {
+        final int oldHours = getVacationHours();
         this.vacationHours = vacationHours;
         changeSupport.firePropertyChange(VACATION_HOURS_PROPERTY_NAME, oldHours, vacationHours);
     }
@@ -77,7 +77,7 @@ public class StaffConsultant extends Consultant {
      * Adds a general property change listener.
      * @param l - the listener
      */
-    public void addPropertyChangeListener(PropertyChangeListener l) {
+    public void addPropertyChangeListener(final PropertyChangeListener l) {
         changeSupport.addPropertyChangeListener(l);
     }
 
@@ -85,7 +85,7 @@ public class StaffConsultant extends Consultant {
      * Remove a general property change listener.
      * @param l - the listener
      */
-    public void removePropertyChangeListener(PropertyChangeListener l) {
+    public void removePropertyChangeListener(final PropertyChangeListener l) {
         changeSupport.removePropertyChangeListener(l);
     }
 
@@ -93,7 +93,7 @@ public class StaffConsultant extends Consultant {
      * Adds a payRate property change listener.
      * @param l - the listener
      */
-    public void addPayRateListener(PropertyChangeListener l) {
+    public void addPayRateListener(final PropertyChangeListener l) {
         changeSupport.addPropertyChangeListener(PAY_RATE_PROPERTY_NAME, l);
     }
 
@@ -101,7 +101,7 @@ public class StaffConsultant extends Consultant {
      * Removes a payRate property change listener.
      * @param l - the listener
      */
-    public void removePayRateListener(PropertyChangeListener l) {
+    public void removePayRateListener(final PropertyChangeListener l) {
         changeSupport.removePropertyChangeListener(l);
     }
 
@@ -109,7 +109,7 @@ public class StaffConsultant extends Consultant {
      * Adds a vetoable change listener.
      * @param l - the listener
      */
-    public void addVetoableChangeListener(VetoableChangeListener l) {
+    public void addVetoableChangeListener(final VetoableChangeListener l) {
         vetoSupport.addVetoableChangeListener(l);
     }
 
@@ -117,24 +117,62 @@ public class StaffConsultant extends Consultant {
      * Removes a vetoable change listener.
      * @param l - the listener
      */
-    public void removeVetoableChangeListener(VetoableChangeListener l) {
+    public void removeVetoableChangeListener(final VetoableChangeListener l) {
         vetoSupport.removeVetoableChangeListener(l);
     }
 
-    public synchronized void addSickLeaveHoursListener(PropertyChangeListener listener) {
+    public synchronized void addSickLeaveHoursListener(final PropertyChangeListener listener) {
         changeSupport.addPropertyChangeListener(SICK_LEAVE_HOURS_PROPERTY_NAME, listener);
     }
 
-    public synchronized void addVacationHoursListener(PropertyChangeListener listener) {
+    public synchronized void addVacationHoursListener(final PropertyChangeListener listener) {
         changeSupport.addPropertyChangeListener(VACATION_HOURS_PROPERTY_NAME, listener);
     }
 
-    public synchronized void removeSickLeaveHoursListener(PropertyChangeListener listener) {
+    public synchronized void removeSickLeaveHoursListener(final PropertyChangeListener listener) {
         changeSupport.removePropertyChangeListener(listener);
     }
 
-    public synchronized void removeVacationHoursListener(PropertyChangeListener listener) {
+    public synchronized void removeVacationHoursListener(final PropertyChangeListener listener) {
         changeSupport.removePropertyChangeListener(listener);
     }
 
+    /**
+     * Calculate the hash code.
+     *
+     * @return the hash code value
+     */
+    @Override
+    public int hashCode() {
+        int hc = StaffConsultant.class.hashCode();
+        hc *= HASH_FACTOR + ((getName() == null) ? 0 : getName().hashCode());
+        hc += hc * HASH_FACTOR + payRate;
+        hc += hc * HASH_FACTOR + sickLeaveHours;
+        hc += hc * HASH_FACTOR + vacationHours;
+
+        return hc;
+    }
+
+    /**
+     * Compare names for equivalence.
+     *
+     * @param other the name to compare to
+     *
+     * @return true if all the name elements have the same value
+     */
+    @Override
+    public boolean equals(final Object other) {
+        if (other == null) {
+            return false;
+        }
+        if (this.getClass() != other.getClass()) {
+            return false;
+        }
+        final StaffConsultant o = (StaffConsultant)other;
+
+        return getName().equals(o.getName()) &&
+                payRate == o.payRate &&
+                sickLeaveHours == o.sickLeaveHours &&
+                vacationHours == o.vacationHours;
+    }
 }

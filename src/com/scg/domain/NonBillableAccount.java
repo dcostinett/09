@@ -20,7 +20,7 @@ public enum NonBillableAccount implements Account, Serializable {
 
     private final String name;
 
-    private NonBillableAccount(String name) {
+    private NonBillableAccount(final String name) {
         this.name = name;
     }
 

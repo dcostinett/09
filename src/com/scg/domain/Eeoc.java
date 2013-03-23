@@ -20,9 +20,9 @@ public class Eeoc implements TerminationListener {
      * @param evt - the termination event
      */
     @Override
-    public void voluntaryTermination(TerminationEvent evt) {
+    public void voluntaryTermination(final TerminationEvent evt) {
         voluntaryTerminationCount++;
-        Consultant consultant = evt.getConsultant();
+        final Consultant consultant = evt.getConsultant();
         LOGGER.info(String.format("%s quit.", consultant.getName()));
     }
 
@@ -31,9 +31,9 @@ public class Eeoc implements TerminationListener {
      * @param evt - the termination event
      */
     @Override
-    public void forcedTermination(TerminationEvent evt) {
+    public void forcedTermination(final TerminationEvent evt) {
         forcedTerminationCount++;
-        Consultant consultant = evt.getConsultant();
+        final Consultant consultant = evt.getConsultant();
         LOGGER.info(String.format("%s was fired.", consultant.getName()));
     }
 

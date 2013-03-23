@@ -26,7 +26,7 @@ public class InvoiceLineItem {
      * @param skill - Skill for this line item.
      * @param hours - Hours for this line item.
      */
-    public InvoiceLineItem(Date date, Consultant consultant, Skill skill, int hours) {
+    public InvoiceLineItem(final Date date, final Consultant consultant, final Skill skill, final int hours) {
         this.date = date;
         this.consultant = consultant;
         this.skill = skill;
@@ -55,9 +55,9 @@ public class InvoiceLineItem {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
 
-        Calendar cal = new GregorianCalendar();
+        final Calendar cal = new GregorianCalendar();
         cal.setTime(date);
         sb.append(String.format("%1$tm/%1$td/%1$tY  %2$-29s  %3$-18s  %4$5d  %5$,10.2f",
                 cal, consultant, skill.getName(), hours, new Float(getCharge())));

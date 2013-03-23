@@ -49,7 +49,7 @@ public class ConsultantTime implements Serializable {
     /**
      * @param date - New value of the property date.
      */
-    public void setDate(Date date) {
+    public void setDate(final Date date) {
         this.date = (date != null) ? (new Date(date.getTime())) : (Date)null;
     }
 
@@ -57,7 +57,7 @@ public class ConsultantTime implements Serializable {
         return account;
     }
 
-    public void setAccount(Account account) {
+    public void setAccount(final Account account) {
         this.account = account;
     }
 
@@ -69,7 +69,7 @@ public class ConsultantTime implements Serializable {
         return hours;
     }
 
-    public void setHours(int hours) throws IllegalArgumentException {
+    public void setHours(final int hours) throws IllegalArgumentException {
 
         if (hours <= 0) {
             throw new IllegalArgumentException("Hours must be positive.");
@@ -85,7 +85,7 @@ public class ConsultantTime implements Serializable {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (!(o instanceof ConsultantTime)) return false;
 

@@ -31,6 +31,8 @@ import java.util.logging.Logger;
  * DisconnectCommand the server should cease reading commands and close the connection.
  */
 public class CommandProcessor implements Runnable {
+    private static final Logger logger = Logger.getLogger(CommandProcessor.class.getName());
+
     /** The database URL. */
     private static final String DB_URL = "jdbc:mysql://localhost/scgDB";
 
@@ -40,57 +42,54 @@ public class CommandProcessor implements Runnable {
     /** The database account password. */
     private static final String DB_PASSWORD = "student";
 
-    DbServer db = new DbServer(DB_URL, DB_ACCOUNT, DB_PASSWORD);
+    private final DbServer db = new DbServer(DB_URL, DB_ACCOUNT, DB_PASSWORD);
 
-    private Socket connection;
-    private List<ClientAccount> clientList;
-    private List<Consultant> consultantList;
-    private InvoiceServer server;
+    private final ThreadLocal<Socket> clientSocket = new ThreadLocal<Socket>();
+    private final ThreadLocal<List<ClientAccount>> clientList = new ThreadLocal<List<ClientAccount>>();
+    private final ThreadLocal<List<Consultant>> consultantList = new ThreadLocal<List<Consultant>>();
+    private final ThreadLocal<InvoiceServer> server = new ThreadLocal<InvoiceServer>();
 
-    private List<TimeCard> timeCardList = new ArrayList<TimeCard>();
+    private final ThreadLocal<List<TimeCard>> timeCardList = new ThreadLocal<List<TimeCard>>();
 
     private String outPutDirectoryName = ".";
 
-    private static final Logger logger = Logger.getLogger(CommandProcessor.class.getName());
-
-    public CommandProcessor(Socket connection,
-                            List<ClientAccount> clientList,
-                            List<Consultant> consultantList,
-                            InvoiceServer server) {
-        this.connection = connection;
-        this.clientList = clientList;
-        this.consultantList = consultantList;
-        this.server = server;
+    public CommandProcessor(final Socket connection,
+                            final List<ClientAccount> clientList,
+                            final List<Consultant> consultantList,
+                            final InvoiceServer server) {
+        this.clientSocket.set(connection);
+        this.clientList.set(clientList);
+        this.consultantList.set(consultantList);
+        this.server.set(server);
     }
 
     /**
      * Set the output directory name.
-     * @param outPutDirectoryName - the output directory name.
+     * @param dir - the output directory name.
      */
-    public void setOutPutDirectoryName(String outPutDirectoryName) {
-        logger.info("Setting output directory to: " + outPutDirectoryName);
+    public void setOutPutDirectoryName(final String dir) {
+        logger.info("Setting output directory to: " + dir);
 
+        this.outPutDirectoryName = dir;
         if (!outPutDirectoryName.endsWith("/")) {
             outPutDirectoryName += "/";
         }
-
-        this.outPutDirectoryName = outPutDirectoryName;
     }
 
     /**
      * execute an AddTimeCardCommand command.
      * @param command - the command to execute.
      */
-    public void execute(AddTimeCardCommand command) {
+    public void execute(final AddTimeCardCommand command) {
 
         logger.info("Adding time card");
-        TimeCard tc = command.getTarget();
+        final TimeCard tc = command.getTarget();
         try {
             db.addTimeCard(tc);
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        timeCardList.add(tc);
+//        timeCardList.add(tc);
         //logger.info(tc.toString());
     }
 
@@ -98,44 +97,43 @@ public class CommandProcessor implements Runnable {
      * execute an AddClientCommand command.
      * @param command - the command to execute.
      */
-    public void execute(AddClientCommand command) {
+    public void execute(final AddClientCommand command) {
         logger.info("Adding client " + command.getTarget().getName());
         try {
             db.addClient(command.getTarget());
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        clientList.add(command.getTarget());
+//        clientList.add(command.getTarget());
     }
 
     /**
      * execute an AddConsultantCommand command.
      * @param command - the command to execute.
      */
-    public void execute(AddConsultantCommand command) {
+    public void execute(final AddConsultantCommand command) {
         logger.info("Adding consultant " + command.getTarget().getName());
         try {
             db.addConsultant(command.getTarget());
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        consultantList.add(command.getTarget());
+//        consultantList.add(command.getTarget());
     }
 
     /**
      * Execute an CreateInvoicesCommand command.
      * @param command - the command to execute.
      */
-    public void execute(CreateInvoicesCommand command) {
+    public void execute(final CreateInvoicesCommand command) {
         //should be the same code from previous methods
         logger.info("Creating invoice");
-        DbServer db = new DbServer("jdbc:mysql://localhost/scgDB", "student", "student");
-        for (ClientAccount client : clientList) {
+        for (ClientAccount client : clientList.get()) {
             try {
-                Calendar cal = Calendar.getInstance();
+                final Calendar cal = Calendar.getInstance();
                 cal.setTime(command.getTarget());
-                Invoice invoice = db.getInvoice(client, cal.get(cal.MONTH), 2006);
-                String fName = String.format("%s-%s-invoice.txt", client.getName().replace(" ", "_"),
+                final Invoice invoice = db.getInvoice(client, cal.get(cal.MONTH), 2006);
+                final String fName = String.format("%s-%s-invoice.txt", client.getName().replace(" ", "_"),
                         Calendar.getInstance().getDisplayName(cal.get(cal.MONTH), Calendar.LONG, Locale.getDefault()));
                 final File outputDir = new File(outPutDirectoryName);
                 if (!outputDir.exists()) {
@@ -144,8 +142,8 @@ public class CommandProcessor implements Runnable {
                 if (!outPutDirectoryName.endsWith("/")) {
                     outPutDirectoryName += "/";
                 }
-                FileOutputStream fout = new FileOutputStream(outPutDirectoryName + fName, false);
-                PrintStream writer = new PrintStream(fout);
+                final FileOutputStream fout = new FileOutputStream(outPutDirectoryName + fName, false);
+                final PrintStream writer = new PrintStream(fout);
                 writer.print(invoice);
                 writer.close();
             } catch (SQLException e) {
@@ -160,11 +158,11 @@ public class CommandProcessor implements Runnable {
      * Execute an DisconnectCommand command.
      * @param command - the command to execute.
      */
-    public void execute(DisconnectCommand command) {
+    public void execute(final DisconnectCommand command) {
         logger.info("Disconnecting");
         try {
-            connection.shutdownInput();
-            connection.close();
+            clientSocket.get().shutdownInput();
+            clientSocket.get().close();
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -176,19 +174,35 @@ public class CommandProcessor implements Runnable {
 
      * @param command - the input ShutdownCommand.
      */
-    public void execute(ShutdownCommand command) {
+    public void execute(final ShutdownCommand command) {
         logger.info("Shutting down");
         try {
-            connection.close();
+            clientSocket.get().close();
         } catch (final IOException e) {
             e.printStackTrace();
         } finally {
-            server.shutdown();
+            server.get().shutdown();
         }
     }
 
     @Override
     public void run() {
-
+        try {
+            ObjectInputStream iStream = new ObjectInputStream(clientSocket.get().getInputStream());
+            while (!clientSocket.get().isClosed()) {
+                final Object obj = iStream.readObject();
+                if (!(obj instanceof Command)) {
+                    logger.warning("Unable to create Command object from: " + obj.toString());
+                    continue;
+                }
+                final Command cmd = (Command) obj;
+                cmd.setReceiver(this);
+                cmd.execute();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 }

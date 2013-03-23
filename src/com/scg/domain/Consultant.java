@@ -45,12 +45,12 @@ public class Consultant implements Comparable<Consultant>, Serializable, ObjectI
     }
 
     @Override
-    public int compareTo(Consultant o) {
+    public int compareTo(final Consultant o) {
         return name.toString().compareTo(o.getName().toString());
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (!(o instanceof Consultant)) return false;
 
@@ -72,7 +72,7 @@ public class Consultant implements Comparable<Consultant>, Serializable, ObjectI
         }
     }
 
-    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+    private void readObject(final ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.registerValidation(this, 0);
         ois.defaultReadObject();
     }

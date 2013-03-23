@@ -22,10 +22,10 @@ public class CompensationManager implements PropertyChangeListener, VetoableChan
      * @param evt - a change event for the payRate property
      */
     @Override
-    public void propertyChange(PropertyChangeEvent evt) {
+    public void propertyChange(final PropertyChangeEvent evt) {
         int oldValue = (Integer) evt.getOldValue();
         int newValue = (Integer) evt.getNewValue();
-        Consultant consultant = (Consultant) evt.getSource();
+        final Consultant consultant = (Consultant) evt.getSource();
         LOGGER.info(String.format("Pay rate changed, from %d to %d for %s",
                 oldValue, newValue, consultant.getName()));
     }
@@ -36,12 +36,12 @@ public class CompensationManager implements PropertyChangeListener, VetoableChan
      * @throws PropertyVetoException
      */
     @Override
-    public void vetoableChange(PropertyChangeEvent evt) throws PropertyVetoException {
+    public void vetoableChange(final PropertyChangeEvent evt) throws PropertyVetoException {
         long oldValue = (Integer) evt.getOldValue();
         long newValue = (Integer) evt.getNewValue();
         long rateChange = (newValue - oldValue) / oldValue;
 
-        Consultant consultant = (Consultant) evt.getSource();
+        final Consultant consultant = (Consultant) evt.getSource();
         if (newValue > (oldValue * 1.05)) {
             LOGGER.info(String.format("REJECTED pay rate change, from %d to %d for %s", oldValue, newValue, consultant.getName()));
             throw new PropertyVetoException("Unable to increase pay more than 5% at a time", evt);

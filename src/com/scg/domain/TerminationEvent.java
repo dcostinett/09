@@ -13,10 +13,10 @@ import java.util.EventObject;
 public class TerminationEvent extends EventObject {
     static final long serialVersionUID = 2049575119145182018L;
 
-    private Consultant consultant;
+    private final Consultant consultant;
     private boolean voluntary;
 
-    public TerminationEvent(Object source, Consultant consultant, boolean voluntary) {
+    public TerminationEvent(final Object source, final Consultant consultant, final boolean voluntary) {
         super(source);
         this.consultant = consultant;
         this.voluntary = voluntary;

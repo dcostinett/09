@@ -30,7 +30,7 @@ public class ClientAccount implements Account, Comparable<ClientAccount>, Serial
      */
     private Address address;
 
-    public ClientAccount(String name, Name contact) {
+    public ClientAccount(final String name, final Name contact) {
         this.name = name;
         this.contact = contact;
     }
@@ -61,7 +61,7 @@ public class ClientAccount implements Account, Comparable<ClientAccount>, Serial
         return contact;
     }
 
-    public void setContact(Name contact) {
+    public void setContact(final Name contact) {
         this.contact = contact;
     }
 
@@ -69,17 +69,17 @@ public class ClientAccount implements Account, Comparable<ClientAccount>, Serial
         return address;
     }
 
-    public void setAddress(Address address) {
+    public void setAddress(final Address address) {
         this.address = address;
     }
 
     @Override
-    public int compareTo(ClientAccount o) {
+    public int compareTo(final ClientAccount o) {
         return name.compareTo(o.getName());
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (!(o instanceof ClientAccount)) return false;
 

@@ -13,7 +13,7 @@ public class VacationHoursChangedEvent extends EventObject {
 
     protected int hours;
 
-    public VacationHoursChangedEvent(Object source, int hours) {
+    public VacationHoursChangedEvent(final Object source, final int hours) {
         super(source);
         this.hours = hours;
     }

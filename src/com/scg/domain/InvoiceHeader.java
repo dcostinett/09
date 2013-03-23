@@ -14,12 +14,15 @@ import java.util.GregorianCalendar;
  * Time: 2:26 PM
  */
 public class InvoiceHeader {
-    private String businessName;
-    private Address businessAddress;
-    private Date invoiceDate;
-    private Date invoiceForMonth;
+    private final String businessName;
+    private final Address businessAddress;
+    private final Date invoiceDate;
+    private final Date invoiceForMonth;
 
-    public InvoiceHeader(String businessName, Address businessAddress, Date invoiceDate, Date invoiceForMonth) {
+    public InvoiceHeader(final String businessName,
+                         final Address businessAddress,
+                         final Date invoiceDate,
+                         final Date invoiceForMonth) {
         this.businessName = businessName;
         this.businessAddress = businessAddress;
         this.invoiceDate = invoiceDate;

@@ -19,11 +19,11 @@ public class BenefitManager implements PropertyChangeListener, EventListener {
      * @param evt - a property change event for the sickLeaveHours or vacationHours property
      */
     @Override
-    public void propertyChange(PropertyChangeEvent evt) {
-        String propName = evt.getPropertyName();
+    public void propertyChange(final PropertyChangeEvent evt) {
+        final String propName = evt.getPropertyName();
         int oldValue = (Integer) evt.getOldValue();
         int newValue = (Integer) evt.getNewValue();
-        Consultant consultant = (Consultant) evt.getSource();
+        final Consultant consultant = (Consultant) evt.getSource();
         LOGGER.info(
                 String.format("%s changed from %d to %d for %s",
                         propName, oldValue, newValue, consultant.getName()));

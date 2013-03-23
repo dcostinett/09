@@ -16,11 +16,9 @@ import java.util.logging.Logger;
  * Responsible for modifying the pay rate and sick leave and vacation hours of staff consultants.
  */
 public class HumanResourceManager {
-
-    private final PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
-    List<TerminationListener> terminators = new ArrayList<TerminationListener>();
-
     private static final Logger LOGGER = Logger.getLogger("HumanResourceManager.class");
+
+    private final EventListenerList terminationEventList = new EventListenerList();
 
     public HumanResourceManager() {
     }
@@ -30,8 +28,8 @@ public class HumanResourceManager {
      * @param c - the consultant
      * @param newPayRate - the new pay rate for the consultant
      */
-    public void adjustPayRate(StaffConsultant c,
-                              int newPayRate) {
+    public void adjustPayRate(final StaffConsultant c,
+                              final int newPayRate) {
         int oldPayRate = c.getPayRate();
         double changeRate = ((double)newPayRate - (double)oldPayRate) / (double)oldPayRate;
         LOGGER.info(String.format(
@@ -51,8 +49,8 @@ public class HumanResourceManager {
      * @param c - the consultant
      * @param newSickLeaveHours - the new sick leave hours for the consultant
      */
-    public void adjustSickLeaveHours(StaffConsultant c,
-                                     int newSickLeaveHours) {
+    public void adjustSickLeaveHours(final StaffConsultant c,
+                                     final int newSickLeaveHours) {
         c.setSickLeaveHours(newSickLeaveHours);
     }
 
@@ -61,8 +59,8 @@ public class HumanResourceManager {
      * @param c - the consultant
      * @param newVacationHours - the new vacation hours for the consultant
      */
-    public void adjustVacationHours(StaffConsultant c,
-                                    int newVacationHours) {
+    public void adjustVacationHours(final StaffConsultant c,
+                                    final int newVacationHours) {
         try {
             c.setVacationHours(newVacationHours);
         } catch (PropertyVetoException e) {
@@ -75,8 +73,8 @@ public class HumanResourceManager {
      * Fires a voluntary termination event for the staff consultant.
      * @param c - the consultant resigning
      */
-    public void acceptResignation(Consultant c) {
-        for (TerminationListener terminator : terminators) {
+    public void acceptResignation(final Consultant c) {
+        for (TerminationListener terminator : terminationEventList.getListeners(TerminationListener.class)) {
             terminator.voluntaryTermination(new TerminationEvent(this, c, true));
         }
     }
@@ -85,8 +83,8 @@ public class HumanResourceManager {
      * Fires an involuntary termination event for the staff consultant.
      * @param c - the consultant being terminated
      */
-    public void terminate(Consultant c) {
-        for (TerminationListener terminator : terminators) {
+    public void terminate(final Consultant c) {
+        for (TerminationListener terminator : terminationEventList.getListeners(TerminationListener.class)) {
             terminator.forcedTermination(new TerminationEvent(this, c, false));
         }
     }
@@ -95,15 +93,15 @@ public class HumanResourceManager {
      * Adds a termination listener.
      * @param l - the listener to add
      */
-    public void addTerminationListener(TerminationListener l) {
-        terminators.add(l);
+    public void addTerminationListener(final TerminationListener l) {
+        terminationEventList.add(TerminationListener.class, l);
     }
 
     /**
      * Removes a termination listener.
      * @param l - the listener to remove
      */
-    public void removeTerminationListener(TerminationListener l) {
-        terminators.remove(l);
+    public void removeTerminationListener(final TerminationListener l) {
+        terminationEventList.remove(TerminationListener.class, l);
     }
 }

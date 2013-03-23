@@ -69,10 +69,7 @@ public class Assignment09 {
             e.printStackTrace();
         }
 
-        InvoiceClient invoiceClient = new InvoiceClient("localhost", DEFAULT_PORT, timeCards);
-        invoiceClient.run();
-
-        InvoiceClient shutdownClient = new InvoiceClient("localhost", DEFAULT_PORT, timeCards);
-        shutdownClient.sendQuit();
+        Thread invoiceClient1 = new InvoiceClient("localhost", DEFAULT_PORT, timeCards);
+        invoiceClient1.start();
     }
 }

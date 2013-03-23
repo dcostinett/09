@@ -39,13 +39,11 @@ import java.util.logging.Logger;
         This should be performed on a separate connection.
  */
 public class InvoiceServer implements Runnable {
-    private int port;
-    private List<ClientAccount> clientList;
-    private List<Consultant> consultantList;
+    private final ThreadLocal<Integer> port = new ThreadLocal<Integer>();
+    private final ThreadLocal<List<ClientAccount>> clientList = new ThreadLocal<List<ClientAccount>>();
+    private final ThreadLocal<List<Consultant>> consultantList = new ThreadLocal<List<Consultant>>();
 
-    private ServerSocket servSock = null;
-
-    private boolean isShutdownCommand = false;
+    private final ThreadLocal<ServerSocket> servSock = new ThreadLocal<ServerSocket>();
 
     private static final Logger logger = Logger.getLogger(InvoiceServer.class.getName());
 
@@ -55,10 +53,10 @@ public class InvoiceServer implements Runnable {
      * @param clientList - the initial list of clients
      * @param consultantList - the initial list of consultants
      */
-    public InvoiceServer(int port, List<ClientAccount> clientList, List<Consultant> consultantList) {
-        this.port = port;
-        this.clientList = clientList;
-        this.consultantList = consultantList;
+    public InvoiceServer(final int port, final List<ClientAccount> clientList, final List<Consultant> consultantList) {
+        this.port.set(port);
+        this.clientList.set(clientList);
+        this.consultantList.set(consultantList);
     }
 
     /**
@@ -66,42 +64,22 @@ public class InvoiceServer implements Runnable {
      */
     public void run() {
         try {
-            servSock = new ServerSocket(port);
-            while (!isShutdownCommand) {
-                logger.info("Server ready on port " + port + " ...");
-                Socket sock = servSock.accept(); // blocks
+            servSock.set(new ServerSocket(port.get()));
+            while (!servSock.get().isClosed()) {
+                logger.info("Server ready on port " + port.get() + " ...");
+                Socket sock = servSock.get().accept(); // blocks
 
-                CommandProcessor proc = new CommandProcessor(sock, clientList, consultantList, this);
+                CommandProcessor proc = new CommandProcessor(sock, clientList.get(), consultantList.get(), this);
 
-                if (sock.getInputStream().available() <= 0) {
-                    continue;
-                }
-                ObjectInputStream iStream = new ObjectInputStream(sock.getInputStream());
-
-                //check for a valid command object before casting
-                Command cmd = (Command) iStream.readObject();
-                while (cmd != null) {
-                    cmd.setReceiver(proc);
-                    cmd.execute();
-                    if (!sock.isClosed()) {
-                        cmd = (Command) iStream.readObject();
-                    } else {
-                        cmd = null;
-                    }
-                }
-/*
                 Thread t = new Thread(proc);
                 t.start();
-*/
-            }
+           }
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
         } finally {
-            if (servSock != null) {
+            if (servSock.get() != null) {
                 try {
-                    servSock.close();
+                    servSock.get().close();
                 } catch (IOException ioex) {
                     System.err.println("Error closing server socket. " + ioex);
                 }
@@ -113,11 +91,10 @@ public class InvoiceServer implements Runnable {
      * Shutdown the server
      */
     void shutdown() {
-        isShutdownCommand = true;
         if (servSock != null) {
             try {
-                if (!servSock.isClosed()) {
-                    servSock.close();
+                if (!servSock.get().isClosed()) {
+                    servSock.get().close();
                 }
             } catch (IOException e) {
                 e.printStackTrace();

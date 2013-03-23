@@ -62,7 +62,7 @@ public class TimeCard implements Comparable<TimeCard>, Serializable {
      *
      * @param consultantTime - consultant time
      */
-    public void addConsultantTime(ConsultantTime consultantTime) {
+    public void addConsultantTime(final ConsultantTime consultantTime) {
         if (consultantTime.isBillable()) {
             consultingHours.add(consultantTime);
             billableHours += consultantTime.getHours();
@@ -78,7 +78,7 @@ public class TimeCard implements Comparable<TimeCard>, Serializable {
      * @param clientName - client name
      * @return List<ConsultantTime> of hours for given client name
      */
-    public List<ConsultantTime> getBillableHoursForClient(String clientName) {
+    public List<ConsultantTime> getBillableHoursForClient(final String clientName) {
         final List<ConsultantTime> clientHours = new ArrayList<ConsultantTime>();
 
         for (final ConsultantTime consultantTime : consultingHours) {
@@ -117,7 +117,7 @@ public class TimeCard implements Comparable<TimeCard>, Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (!(o instanceof TimeCard)) return false;
 

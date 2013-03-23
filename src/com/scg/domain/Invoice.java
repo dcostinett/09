@@ -74,12 +74,12 @@ public final class Invoice {
      *                     constant.
      * @param invoiceYear - Year for which this Invoice is being created.
      */
-    public Invoice(ClientAccount client, int invoiceMonth, int invoiceYear) {
+    public Invoice(final ClientAccount client, final int invoiceMonth, final int invoiceYear) {
         this.client = client;
         this.invoiceMonth = invoiceMonth;
         this.invoiceYear = invoiceYear;
 
-        Calendar cal = new GregorianCalendar();
+        final Calendar cal = new GregorianCalendar();
         cal.set(Calendar.MONTH, invoiceMonth);
         cal.set(Calendar.YEAR, invoiceYear);
         cal.set(Calendar.DATE, 1);
@@ -90,7 +90,7 @@ public final class Invoice {
         Date startDate = cal.getTime();
 
         cal.set(Calendar.DATE, cal.getMaximum(Calendar.DAY_OF_MONTH));
-        Date endDate = cal.getTime();
+        final Date endDate = cal.getTime();
 
         this.dateRange = new DateRange(startDate, endDate);
 
@@ -101,11 +101,11 @@ public final class Invoice {
         }
     }
 
-    public Invoice(ClientAccount client, DateRange dateRange) {
+    public Invoice(final ClientAccount client, final DateRange dateRange) {
         this.client = client;
         this.dateRange = dateRange;
 
-        Calendar cal = new GregorianCalendar();
+        final Calendar cal = new GregorianCalendar();
         cal.setTime(getStartDate());
         this.invoiceMonth = cal.get(Calendar.MONTH);
         this.invoiceYear = cal.get(Calendar.YEAR);
@@ -166,8 +166,8 @@ public final class Invoice {
      * Only those hours for the client and month unique to this invoice will be added.
      * @param timeCard - the TimeCard potentially containing line items for this Invoices client.
      */
-    public void extractLineItems(TimeCard timeCard) {
-        List<ConsultantTime> consultantTimes = timeCard.getBillableHoursForClient(client.getName());
+    public void extractLineItems(final TimeCard timeCard) {
+        final List<ConsultantTime> consultantTimes = timeCard.getBillableHoursForClient(client.getName());
         for (ConsultantTime time : consultantTimes) {
             InvoiceLineItem lineItem = new InvoiceLineItem(
                     time.getDate(),
@@ -184,8 +184,8 @@ public final class Invoice {
 
 
 
-    private String getPageHeader(InvoiceHeader header) {
-        StringBuilder sb = new StringBuilder();
+    private String getPageHeader(final InvoiceHeader header) {
+        final StringBuilder sb = new StringBuilder();
         sb.append(header.toString()).append("\n");
 
         sb.append("Invoice for: ").append("\n");
@@ -222,18 +222,18 @@ public final class Invoice {
      */
     public String toString() {
 
-        Address addr = new Address(invoiceProperties.getProperty(BUSINESS_STREET_PROP),
+        final Address addr = new Address(invoiceProperties.getProperty(BUSINESS_STREET_PROP),
                 invoiceProperties.getProperty(BUSINESS_CITY_PROP),
                 StateCode.valueOf(invoiceProperties.getProperty(BUSINESS_STATE_PROP)),
                 invoiceProperties.getProperty(BUSINESS_ZIP_PROP));
 
-        InvoiceHeader invoiceHeader = new InvoiceHeader(
+        final InvoiceHeader invoiceHeader = new InvoiceHeader(
                 invoiceProperties.getProperty(BUSINESS_NAME_PROP),
                 addr,
                 getStartDate(),
                 new Date(invoiceMonth));
 
-        InvoiceFooter footer = new InvoiceFooter(invoiceProperties.getProperty(BUSINESS_NAME_PROP));
+        final InvoiceFooter footer = new InvoiceFooter(invoiceProperties.getProperty(BUSINESS_NAME_PROP));
 
         StringBuilder sb = new StringBuilder();
         sb.append(getPageHeader(invoiceHeader));
