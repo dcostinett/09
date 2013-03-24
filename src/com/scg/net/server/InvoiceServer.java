@@ -6,12 +6,13 @@ import com.scg.net.Command;
 import com.scg.net.ShutdownCommand;
 import com.scg.persistent.DbServer;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -39,11 +40,11 @@ import java.util.logging.Logger;
         This should be performed on a separate connection.
  */
 public class InvoiceServer implements Runnable {
-    private final ThreadLocal<Integer> port = new ThreadLocal<Integer>();
-    private final ThreadLocal<List<ClientAccount>> clientList = new ThreadLocal<List<ClientAccount>>();
-    private final ThreadLocal<List<Consultant>> consultantList = new ThreadLocal<List<Consultant>>();
+    private final Integer port;
+    private final List<ClientAccount> clientList;
+    private final List<Consultant> consultantList;
 
-    private final ThreadLocal<ServerSocket> servSock = new ThreadLocal<ServerSocket>();
+    private ServerSocket servSock;
 
     private static final Logger logger = Logger.getLogger(InvoiceServer.class.getName());
 
@@ -54,32 +55,37 @@ public class InvoiceServer implements Runnable {
      * @param consultantList - the initial list of consultants
      */
     public InvoiceServer(final int port, final List<ClientAccount> clientList, final List<Consultant> consultantList) {
-        this.port.set(port);
-        this.clientList.set(clientList);
-        this.consultantList.set(consultantList);
+        this.port = port;
+        this.clientList = clientList;
+        this.consultantList = consultantList;
     }
 
     /**
      * Run this server, establishing connections, receiving commands, and sending them to the CommandProcesser.
      */
     public void run() {
-        try {
-            servSock.set(new ServerSocket(port.get()));
-            while (!servSock.get().isClosed()) {
-                logger.info("Server ready on port " + port.get() + " ...");
-                Socket sock = servSock.get().accept(); // blocks
+        Runtime runtime = Runtime.getRuntime();
+        runtime.addShutdownHook(new ShutdownHook());
 
-                CommandProcessor proc = new CommandProcessor(sock, clientList.get(), consultantList.get(), this);
+        try {
+            servSock = new ServerSocket(port);
+            while (!servSock.isClosed()) {
+                logger.info("Server ready on port " + port + " ...");
+                Socket sock = servSock.accept(); // blocks
+
+                CommandProcessor proc = new CommandProcessor(sock, clientList, consultantList, this);
 
                 Thread t = new Thread(proc);
                 t.start();
            }
-        } catch (IOException e) {
+        } catch (final SocketException sx) {
+            logger.info("Server socket closed.");
+        } catch (final IOException e) {
             e.printStackTrace();
         } finally {
-            if (servSock.get() != null) {
+            if (servSock != null) {
                 try {
-                    servSock.get().close();
+                    servSock.close();
                 } catch (IOException ioex) {
                     System.err.println("Error closing server socket. " + ioex);
                 }
@@ -93,11 +99,57 @@ public class InvoiceServer implements Runnable {
     void shutdown() {
         if (servSock != null) {
             try {
-                if (!servSock.get().isClosed()) {
-                    servSock.get().close();
+                if (!servSock.isClosed()) {
+                    servSock.close();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+        }
+    }
+
+
+    private class ShutdownHook extends Thread {
+
+        private ShutdownHook() {
+        }
+
+        @Override
+        public void run() {
+            for (ClientAccount client : clientList) {
+                final String outFileName = String.format("%s%s.txt",
+                        "./",
+                        client.getName().replaceAll(" ", "_"));
+
+                PrintStream printOut = null;
+                try {
+                    printOut = new PrintStream(new FileOutputStream(outFileName), true);
+                    printOut.println(client.toString());
+                } catch (final FileNotFoundException e) {
+                    logger.log(Level.SEVERE, "Can't open file " + outFileName, e);
+                } finally {
+                    if (printOut != null) {
+                        printOut.close();
+                    }
+                }
+            }
+
+            for (Consultant consultant : consultantList) {
+                final String outFileName = String.format("%s%s.txt",
+                        "./",
+                        consultant.getName().toString().replaceAll(" ", "_"));
+
+                PrintStream printOut = null;
+                try {
+                    printOut = new PrintStream(new FileOutputStream(outFileName), true);
+                    printOut.println(consultant.toString());
+                } catch (final FileNotFoundException e) {
+                    logger.log(Level.SEVERE, "Can't open file " + outFileName, e);
+                } finally {
+                    if (printOut != null) {
+                        printOut.close();
+                    }
+                }
             }
         }
     }

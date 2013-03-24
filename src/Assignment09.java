@@ -40,6 +40,7 @@ import java.util.List;
  *
  */
 public class Assignment09 {
+    public static final String HOST = "localhost";
 
     public static final int DEFAULT_PORT = 10888;
 
@@ -69,7 +70,14 @@ public class Assignment09 {
             e.printStackTrace();
         }
 
-        Thread invoiceClient1 = new InvoiceClient("localhost", DEFAULT_PORT, timeCards);
-        invoiceClient1.start();
+        final int threadCount = 5;
+        Thread[] threads = new Thread[threadCount];
+        for (int i = 0; i < threadCount; i++ ) {
+            threads[i] = new InvoiceClient(HOST, DEFAULT_PORT, timeCards);
+        }
+
+        for (Thread thread : threads) {
+            thread.start();
+        }
     }
 }

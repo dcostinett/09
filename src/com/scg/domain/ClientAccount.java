@@ -98,6 +98,24 @@ public class ClientAccount implements Account, Comparable<ClientAccount>, Serial
         result = 31 * result + address.hashCode();
         return result;
     }
+
+    /**
+     * String representation for this Client.
+     *
+     * @return Formatted string of the form
+     *
+     * <pre>
+     *  Client Name
+     *  Client Address
+     *  Client Contact Name
+     * </pre>
+     */
+    @Override
+    public String toString() {
+        return String.format("%s%n%s%n%s%n", name, address.toString(), contact.toString());
+    }
+
+
 }
 
 

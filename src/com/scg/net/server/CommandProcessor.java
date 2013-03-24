@@ -10,10 +10,12 @@ import com.scg.persistent.DbServer;
 import java.io.*;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -33,34 +35,25 @@ import java.util.logging.Logger;
 public class CommandProcessor implements Runnable {
     private static final Logger logger = Logger.getLogger(CommandProcessor.class.getName());
 
-    /** The database URL. */
-    private static final String DB_URL = "jdbc:mysql://localhost/scgDB";
+    private final Socket clientSocket;
+    private final List<ClientAccount> clientList;
+    private final List<Consultant> consultantList;
+    private final InvoiceServer server;
 
-    /** The database account name. */
-    private static final String DB_ACCOUNT = "student";
+    private final List<TimeCard> timeCardList = new ArrayList<TimeCard>();
 
-    /** The database account password. */
-    private static final String DB_PASSWORD = "student";
+    private String outputDirectoryName = ".";
 
-    private final DbServer db = new DbServer(DB_URL, DB_ACCOUNT, DB_PASSWORD);
-
-    private final ThreadLocal<Socket> clientSocket = new ThreadLocal<Socket>();
-    private final ThreadLocal<List<ClientAccount>> clientList = new ThreadLocal<List<ClientAccount>>();
-    private final ThreadLocal<List<Consultant>> consultantList = new ThreadLocal<List<Consultant>>();
-    private final ThreadLocal<InvoiceServer> server = new ThreadLocal<InvoiceServer>();
-
-    private final ThreadLocal<List<TimeCard>> timeCardList = new ThreadLocal<List<TimeCard>>();
-
-    private String outPutDirectoryName = ".";
+    private final Object lock = new Object();
 
     public CommandProcessor(final Socket connection,
                             final List<ClientAccount> clientList,
                             final List<Consultant> consultantList,
                             final InvoiceServer server) {
-        this.clientSocket.set(connection);
-        this.clientList.set(clientList);
-        this.consultantList.set(consultantList);
-        this.server.set(server);
+        this.clientSocket = connection;
+        this.clientList = clientList;
+        this.consultantList = consultantList;
+        this.server = server;
     }
 
     /**
@@ -70,9 +63,11 @@ public class CommandProcessor implements Runnable {
     public void setOutPutDirectoryName(final String dir) {
         logger.info("Setting output directory to: " + dir);
 
-        this.outPutDirectoryName = dir;
-        if (!outPutDirectoryName.endsWith("/")) {
-            outPutDirectoryName += "/";
+        synchronized (lock) {
+            this.outputDirectoryName = dir;
+            if (!outputDirectoryName.endsWith("/")) {
+                outputDirectoryName += "/";
+            }
         }
     }
 
@@ -84,12 +79,10 @@ public class CommandProcessor implements Runnable {
 
         logger.info("Adding time card");
         final TimeCard tc = command.getTarget();
-        try {
-            db.addTimeCard(tc);
-        } catch (SQLException e) {
-            e.printStackTrace();
+
+        synchronized (timeCardList) {
+            timeCardList.add(tc);
         }
-//        timeCardList.add(tc);
         //logger.info(tc.toString());
     }
 
@@ -99,12 +92,10 @@ public class CommandProcessor implements Runnable {
      */
     public void execute(final AddClientCommand command) {
         logger.info("Adding client " + command.getTarget().getName());
-        try {
-            db.addClient(command.getTarget());
-        } catch (SQLException e) {
-            e.printStackTrace();
+
+        synchronized (clientList) {
+            clientList.add(command.getTarget());
         }
-//        clientList.add(command.getTarget());
     }
 
     /**
@@ -113,12 +104,10 @@ public class CommandProcessor implements Runnable {
      */
     public void execute(final AddConsultantCommand command) {
         logger.info("Adding consultant " + command.getTarget().getName());
-        try {
-            db.addConsultant(command.getTarget());
-        } catch (SQLException e) {
-            e.printStackTrace();
+
+        synchronized (consultantList) {
+            consultantList.add(command.getTarget());
         }
-//        consultantList.add(command.getTarget());
     }
 
     /**
@@ -126,9 +115,10 @@ public class CommandProcessor implements Runnable {
      * @param command - the command to execute.
      */
     public void execute(final CreateInvoicesCommand command) {
+/*
         //should be the same code from previous methods
         logger.info("Creating invoice");
-        for (ClientAccount client : clientList.get()) {
+        for (ClientAccount client : clientList) {
             try {
                 final Calendar cal = Calendar.getInstance();
                 cal.setTime(command.getTarget());
@@ -152,6 +142,45 @@ public class CommandProcessor implements Runnable {
                 e.printStackTrace();
             }
         }
+*/
+        logger.info("Executing invoice command: " + command);
+        final Calendar calendar = Calendar.getInstance();
+        calendar.setTime(command.getTarget());
+
+        final SimpleDateFormat formatter = new SimpleDateFormat("MMMMyyyy");
+        final String monthString = formatter.format(calendar.getTime());
+        for (final ClientAccount client : clientList) {
+            Invoice invoice = new Invoice(client,
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.YEAR));
+            for (final TimeCard currentTimeCard : timeCardList) {
+                invoice.extractLineItems(currentTimeCard);
+            }
+
+            final File serverDir = new File(outputDirectoryName);
+            if (!serverDir.exists()) {
+                if (!serverDir.mkdirs()) {
+                    logger.severe("Unable to create directory, " + serverDir.getAbsolutePath());
+                    return;
+                }
+            }
+            final String outFileName = String.format("%s%s%sInvoice.txt",
+                    outputDirectoryName,
+                    client.getName().replaceAll(" ", "_"),
+                    monthString);
+
+            PrintStream printOut = null;
+            try {
+                printOut = new PrintStream(new FileOutputStream(outFileName), true);
+                printOut.println(invoice.toString());
+            } catch (final FileNotFoundException e) {
+                logger.log(Level.SEVERE, "Can't open file " + outFileName, e);
+            } finally {
+                if (printOut != null) {
+                    printOut.close();
+                }
+            }
+        }
     }
 
     /**
@@ -161,8 +190,8 @@ public class CommandProcessor implements Runnable {
     public void execute(final DisconnectCommand command) {
         logger.info("Disconnecting");
         try {
-            clientSocket.get().shutdownInput();
-            clientSocket.get().close();
+            clientSocket.shutdownInput();
+            clientSocket.close();
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -177,19 +206,19 @@ public class CommandProcessor implements Runnable {
     public void execute(final ShutdownCommand command) {
         logger.info("Shutting down");
         try {
-            clientSocket.get().close();
+            clientSocket.close();
         } catch (final IOException e) {
             e.printStackTrace();
         } finally {
-            server.get().shutdown();
+            server.shutdown();
         }
     }
 
     @Override
     public void run() {
         try {
-            ObjectInputStream iStream = new ObjectInputStream(clientSocket.get().getInputStream());
-            while (!clientSocket.get().isClosed()) {
+            ObjectInputStream iStream = new ObjectInputStream(clientSocket.getInputStream());
+            while (!clientSocket.isClosed()) {
                 final Object obj = iStream.readObject();
                 if (!(obj instanceof Command)) {
                     logger.warning("Unable to create Command object from: " + obj.toString());
