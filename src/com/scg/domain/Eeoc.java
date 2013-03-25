@@ -11,8 +11,8 @@ import java.util.logging.Logger;
  */
 public class Eeoc implements TerminationListener {
 
-    int forcedTerminationCount;
-    int voluntaryTerminationCount;
+    private int forcedTerminationCount = 0;
+    private int voluntaryTerminationCount = 0;
 
     private static final Logger LOGGER = Logger.getLogger("Eeoc.class");
     /**
@@ -39,7 +39,7 @@ public class Eeoc implements TerminationListener {
 
     /**
      * Gets the forced termination count.
-     * @return
+     * @return number of firings
      */
     public int forcedTerminationCount() {
         return forcedTerminationCount;
@@ -47,7 +47,7 @@ public class Eeoc implements TerminationListener {
 
     /**
      * Gets the voluntary termination count.
-     * @return
+     * @return number of employee resignations
      */
     public int voluntaryTerminationCount() {
         return voluntaryTerminationCount;
