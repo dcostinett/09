@@ -122,9 +122,9 @@ public class CommandProcessor implements Runnable {
             try {
                 final Calendar cal = Calendar.getInstance();
                 cal.setTime(command.getTarget());
-                final Invoice invoice = db.getInvoice(client, cal.get(cal.MONTH), 2006);
+                final Invoice invoice = db.getInvoice(client, cal.get(Calendar.MONTH), 2006);
                 final String fName = String.format("%s-%s-invoice.txt", client.getName().replace(" ", "_"),
-                        Calendar.getInstance().getDisplayName(cal.get(cal.MONTH), Calendar.LONG, Locale.getDefault()));
+                        Calendar.getInstance().getDisplayName(cal.get(Calendar.MONTH), Calendar.LONG, Locale.getDefault()));
                 final File outputDir = new File(outPutDirectoryName);
                 if (!outputDir.exists()) {
                     outputDir.mkdirs();
@@ -224,7 +224,7 @@ public class CommandProcessor implements Runnable {
                     logger.warning("Unable to create Command object from: " + obj.toString());
                     continue;
                 }
-                final Command cmd = (Command) obj;
+                final Command<?> cmd = (Command<?>) obj;
                 cmd.setReceiver(this);
                 cmd.execute();
             }
