@@ -90,7 +90,7 @@ public class InvoiceClient extends Thread {
 
             sendDisconnect(oStream);
 
-            sendQuit();
+//            sendQuit();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

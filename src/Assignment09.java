@@ -51,24 +51,10 @@ public class Assignment09 {
      */
     public static void main(@SuppressWarnings("unused") String[] args) {
 
-        DbServer db = new DbServer("jdbc:mysql://localhost/scgDB", "student", "student");
-
         List<ClientAccount> clients = new ArrayList<ClientAccount>();
         List<Consultant> consultants = new ArrayList<Consultant>();
         List<TimeCard> timeCards = new ArrayList<TimeCard>();
         ListFactory.populateLists(clients,  consultants, timeCards);
-
-        try {
-            db.clean_db();
-            for (ClientAccount client : clients) {
-                db.addClient(client);
-            }
-            for (Consultant consultant : consultants){
-                db.addConsultant(consultant);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
 
         final int threadCount = 5;
         Thread[] threads = new Thread[threadCount];
@@ -76,8 +62,16 @@ public class Assignment09 {
             threads[i] = new InvoiceClient(HOST, DEFAULT_PORT, timeCards);
         }
 
-        for (Thread thread : threads) {
-            thread.start();
+        for (Thread t : threads) {
+            t.start();
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
+        InvoiceClient client = new InvoiceClient(HOST, DEFAULT_PORT, timeCards);
+        client.sendQuit();
     }
 }

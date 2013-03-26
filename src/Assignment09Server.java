@@ -47,21 +47,6 @@ import java.util.List;
         This should be performed on a separate connection.
  */
 public class Assignment09Server {
-    /**
-     * connection string to the SQL DB
-     */
-    private static final String URL = "jdbc:mysql://localhost/scgDB";
-
-    /**
-     * user name for DB credentials
-     */
-    private static final String USERNAME = "student";
-
-    /**
-     * DB credentials password
-     */
-    private static final String PASSWORD = "student";
-
     /** The port for the server to listen on.*/
     public static final int DEFAULT_PORT = 10888;
 

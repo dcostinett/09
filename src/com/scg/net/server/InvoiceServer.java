@@ -73,9 +73,10 @@ public class InvoiceServer implements Runnable {
                 logger.info("Server ready on port " + port + " ...");
                 Socket sock = servSock.accept(); // blocks
 
-                CommandProcessor proc = new CommandProcessor(sock, clientList, consultantList, this);
+                final CommandProcessor proc = new CommandProcessor(sock, clientList, consultantList, this);
 
-                Thread t = new Thread(proc);
+                // set the output directory of the server prior to starting the thread.
+                final Thread t = new Thread(proc);
                 t.start();
            }
         } catch (final SocketException sx) {
@@ -116,38 +117,42 @@ public class InvoiceServer implements Runnable {
 
         @Override
         public void run() {
-            for (ClientAccount client : clientList) {
-                final String outFileName = String.format("%s%s.txt",
-                        "./",
-                        client.getName().replaceAll(" ", "_"));
+            synchronized (clientList) {
+                for (ClientAccount client : clientList) {
+                    final String outFileName = String.format("%s%s.txt",
+                            "./",
+                            client.getName().replaceAll(" ", "_"));
 
-                PrintStream printOut = null;
-                try {
-                    printOut = new PrintStream(new FileOutputStream(outFileName), true);
-                    printOut.println(client.toString());
-                } catch (final FileNotFoundException e) {
-                    logger.log(Level.SEVERE, "Can't open file " + outFileName, e);
-                } finally {
-                    if (printOut != null) {
-                        printOut.close();
+                    PrintStream printOut = null;
+                    try {
+                        printOut = new PrintStream(new FileOutputStream(outFileName), true);
+                        printOut.println(client.toString());
+                    } catch (final FileNotFoundException e) {
+                        logger.log(Level.SEVERE, "Can't open file " + outFileName, e);
+                    } finally {
+                        if (printOut != null) {
+                            printOut.close();
+                        }
                     }
                 }
             }
 
-            for (Consultant consultant : consultantList) {
-                final String outFileName = String.format("%s%s.txt",
-                        "./",
-                        consultant.getName().toString().replaceAll(" ", "_"));
+            synchronized (consultantList) {
+                for (Consultant consultant : consultantList) {
+                    final String outFileName = String.format("%s%s.txt",
+                            "./",
+                            consultant.getName().toString().replaceAll(" ", "_"));
 
-                PrintStream printOut = null;
-                try {
-                    printOut = new PrintStream(new FileOutputStream(outFileName), true);
-                    printOut.println(consultant.toString());
-                } catch (final FileNotFoundException e) {
-                    logger.log(Level.SEVERE, "Can't open file " + outFileName, e);
-                } finally {
-                    if (printOut != null) {
-                        printOut.close();
+                    PrintStream printOut = null;
+                    try {
+                        printOut = new PrintStream(new FileOutputStream(outFileName), true);
+                        printOut.println(consultant.toString());
+                    } catch (final FileNotFoundException e) {
+                        logger.log(Level.SEVERE, "Can't open file " + outFileName, e);
+                    } finally {
+                        if (printOut != null) {
+                            printOut.close();
+                        }
                     }
                 }
             }

@@ -6,6 +6,8 @@ import com.scg.domain.Invoice;
 import com.scg.domain.TimeCard;
 import com.scg.net.*;
 import com.scg.persistent.DbServer;
+import com.scg.util.DateRange;
+import com.scg.util.TimeCardListUtil;
 
 import java.io.*;
 import java.net.Socket;
@@ -46,6 +48,7 @@ public class CommandProcessor implements Runnable {
 
     private final Object lock = new Object();
 
+    //pass in a timeCardList instance in order to aggregate all the data into one list
     public CommandProcessor(final Socket connection,
                             final List<ClientAccount> clientList,
                             final List<Consultant> consultantList,
@@ -63,11 +66,9 @@ public class CommandProcessor implements Runnable {
     public void setOutPutDirectoryName(final String dir) {
         logger.info("Setting output directory to: " + dir);
 
-        synchronized (lock) {
-            this.outputDirectoryName = dir;
-            if (!outputDirectoryName.endsWith("/")) {
-                outputDirectoryName += "/";
-            }
+        this.outputDirectoryName = dir;
+        if (!outputDirectoryName.endsWith("/")) {
+            outputDirectoryName += "/";
         }
     }
 
@@ -81,9 +82,10 @@ public class CommandProcessor implements Runnable {
         final TimeCard tc = command.getTarget();
 
         synchronized (timeCardList) {
-            timeCardList.add(tc);
+            if (!timeCardList.contains(tc)) {
+                timeCardList.add(tc);
+            }
         }
-        //logger.info(tc.toString());
     }
 
     /**
@@ -94,7 +96,9 @@ public class CommandProcessor implements Runnable {
         logger.info("Adding client " + command.getTarget().getName());
 
         synchronized (clientList) {
-            clientList.add(command.getTarget());
+            if (!clientList.contains(command.getTarget())) {
+                clientList.add(command.getTarget());
+            }
         }
     }
 
@@ -106,7 +110,9 @@ public class CommandProcessor implements Runnable {
         logger.info("Adding consultant " + command.getTarget().getName());
 
         synchronized (consultantList) {
-            consultantList.add(command.getTarget());
+            if (!consultantList.contains(command.getTarget())) {
+                consultantList.add(command.getTarget());
+            }
         }
     }
 
@@ -143,41 +149,48 @@ public class CommandProcessor implements Runnable {
             }
         }
 */
-        logger.info("Executing invoice command: " + command);
+        logger.info("Executing invoice command.");
         final Calendar calendar = Calendar.getInstance();
         calendar.setTime(command.getTarget());
 
         final SimpleDateFormat formatter = new SimpleDateFormat("MMMMyyyy");
         final String monthString = formatter.format(calendar.getTime());
-        for (final ClientAccount client : clientList) {
-            Invoice invoice = new Invoice(client,
-                    calendar.get(Calendar.MONTH),
-                    calendar.get(Calendar.YEAR));
-            for (final TimeCard currentTimeCard : timeCardList) {
-                invoice.extractLineItems(currentTimeCard);
-            }
+        synchronized (clientList) {
+            for (final ClientAccount client : clientList) {
+                Invoice invoice = new Invoice(client,
+                        calendar.get(Calendar.MONTH),
+                        calendar.get(Calendar.YEAR));
 
-            final File serverDir = new File(outputDirectoryName);
-            if (!serverDir.exists()) {
-                if (!serverDir.mkdirs()) {
-                    logger.severe("Unable to create directory, " + serverDir.getAbsolutePath());
-                    return;
+                List<TimeCard> timeCardListForClient;
+                timeCardListForClient = TimeCardListUtil.getTimeCardsForDateRange(timeCardList,
+                        new DateRange(calendar.get(Calendar.MONTH), calendar.get(Calendar.YEAR)));
+
+                for (final TimeCard currentTimeCard : timeCardList) {
+                    invoice.extractLineItems(currentTimeCard);
                 }
-            }
-            final String outFileName = String.format("%s%s%sInvoice.txt",
-                    outputDirectoryName,
-                    client.getName().replaceAll(" ", "_"),
-                    monthString);
 
-            PrintStream printOut = null;
-            try {
-                printOut = new PrintStream(new FileOutputStream(outFileName), true);
-                printOut.println(invoice.toString());
-            } catch (final FileNotFoundException e) {
-                logger.log(Level.SEVERE, "Can't open file " + outFileName, e);
-            } finally {
-                if (printOut != null) {
-                    printOut.close();
+                final File serverDir = new File(outputDirectoryName);
+                if (!serverDir.exists()) {
+                    if (!serverDir.mkdirs()) {
+                        logger.severe("Unable to create directory, " + serverDir.getAbsolutePath());
+                        return;
+                    }
+                }
+                final String outFileName = String.format("%s%s%sInvoice.txt",
+                        outputDirectoryName,
+                        client.getName().replaceAll(" ", "_"),
+                        monthString);
+
+                PrintStream printOut = null;
+                try {
+                    printOut = new PrintStream(new FileOutputStream(outFileName), true);
+                    printOut.println(invoice.toString());
+                } catch (final FileNotFoundException e) {
+                    logger.log(Level.SEVERE, "Can't open file " + outFileName, e);
+                } finally {
+                    if (printOut != null) {
+                        printOut.close();
+                    }
                 }
             }
         }
@@ -233,5 +246,7 @@ public class CommandProcessor implements Runnable {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
+
+        //should add a finally clause that closes socket and iStream if there was a problem.
     }
 }
